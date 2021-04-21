@@ -32,6 +32,7 @@ struct event {
   __u32 srtt;
   __u32 rcv_wnd;
   __u64 sock_cookie;
+  __u32 portpair;
   int oldstate;
   int newstate;
   int state;

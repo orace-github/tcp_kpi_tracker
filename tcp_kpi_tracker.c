@@ -74,10 +74,10 @@ static void common_handle_event(const struct event *e, unsigned long *hashVal){
     memcpy(&s.x6.s6_addr, e->saddr_v6, sizeof(s.x6.s6_addr));
     memcpy(&d.x6.s6_addr, e->daddr_v6, sizeof(d.x6.s6_addr));
   } 
-  ret = sprintf(eventstr,"%d  %s %s %d %d %d", 
+  ret = sprintf(eventstr,"%d  %s %s %d %d %d %d %d", 
     e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &d, dst, sizeof(dst)), 
        inet_ntop(e->af, &s, src, sizeof(src)), e->dport,  
-       e->sport, e->state);
+       e->sport, e->state, e->portpair >> 16, e->portpair & 0xffff);
   eventstr[ret] = '\0';
   *hashVal = hash(eventstr, strlen(eventstr), HASH_SIZE);
   printf("%s\n", eventstr);

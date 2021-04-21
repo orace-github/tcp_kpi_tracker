@@ -18,8 +18,8 @@ struct {
 const volatile unsigned long long min_duration_ns = 0;
 
 
-//SEC("tp_btf/tcp_retransmit_skb")
-SEC("kprobe/tcp_retransmit_skb")
+SEC("tp_btf/tcp_retransmit_skb")
+//SEC("kprobe/tcp_retransmit_skb")
 int BPF_PROG(tcp_retransmit_skb, const struct sock *sk, 
   const struct sk_buff *sk_buff){
   struct event *e;
@@ -39,6 +39,7 @@ int BPF_PROG(tcp_retransmit_skb, const struct sock *sk,
   BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
   BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   BPF_CORE_READ_INTO(&e->state, sk, __sk_common.skc_state);
+  BPF_CORE_READ_INTO(&e->portpair, sk, __sk_common.skc_portpair);
   e->type = RETRANSMIT_SKB;
   /* send data to user-space for post-processing */
   bpf_ringbuf_submit(e, 0);
