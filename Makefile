@@ -2,8 +2,8 @@
 OUTPUT := .output
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
-BPFTOOL ?= $(abspath ../tools/bpftool)
-LIBBPF_SRC := $(abspath ../libbpf/src)
+BPFTOOL ?= $(abspath tools/bpftool)
+LIBBPF_SRC := $(abspath libbpf/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
 # Use our own libbpf API headers and Linux UAPI headers distributed with
 # libbpf to avoid dependency on system-wide headers, which could be missing or
