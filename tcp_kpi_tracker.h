@@ -11,7 +11,8 @@ enum {
   DESTROY_SOCK,
   SEND_RESET,
   RECV_RESET,
-  BICTCP_CONG_AVOID
+  BICTCP_CONG_AVOID,
+  BICTCP_ACKED,
 };
 
 struct event {
@@ -47,6 +48,25 @@ struct event {
     __u8 daddr_v6[16];
   };
   int type;
+  struct __bictcp {
+	__u32 cnt;
+	__u32 last_max_cwnd;
+	__u32 last_cwnd;
+	__u32 last_time;
+	__u32 bic_origin_point;
+  __u32 bic_K;
+	__u32 delay_min;
+	__u32 epoch_start;
+	__u32 ack_cnt;
+	__u32 tcp_cwnd;
+	__u16 unused;
+	__u8 sample_cnt;
+	__u8 found;
+	__u32 round_start;
+	__u32 end_seq;
+	__u32 last_ack;
+	__u32 curr_rtt;
+  } bictcp;
 };
 
 struct kpi_events{

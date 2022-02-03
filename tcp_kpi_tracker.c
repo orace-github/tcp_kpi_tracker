@@ -154,16 +154,19 @@ static int handle_event(void *ctx, void *data, size_t data_sz){
   unsigned long hashVal;
   strftime(ts, sizeof(ts), "%H:%M:%S", tm);   
   switch(e->type){
-    case RETRANSMIT_SKB:
+    /*case RETRANSMIT_SKB:
       fprintf(stderr, "RETRANSMIT_SKB\n");
       common_handle_event(e, &hashVal);
       hash_table[hashVal].retrans++;
       break;
-    /*case BICTCP_CONG_AVOID:
+    */
+    case BICTCP_CONG_AVOID:
       fprintf(stderr, "BICTCP_CONG_AVOID\n");
       common_handle_event(e, &hashVal);
+      printf("%s:%d %s:%d %s:%d\n","tcp_cwnd",e->bictcp.tcp_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd,
+      "last_cwnd",e->bictcp.last_cwnd);
       break;
-    case TRANSMIT_SKB:
+    /*case TRANSMIT_SKB:
       fprintf(stderr, "TRANSMIT_SKB\n");
       common_handle_event(e, &hashVal);
       break;
