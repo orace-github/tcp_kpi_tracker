@@ -13,7 +13,31 @@ enum {
   RECV_RESET,
   BICTCP_CONG_AVOID,
   BICTCP_ACKED,
+  BICTCP_INIT,
+  BICTCP_SSTHRESH,
+  BICTCP_STATE,
+  BICTCP_UNDO_CWND,
+  BICTCP_CWND_EVENT
 };
+
+struct session{
+  union {
+    __u32 addr_v4;
+    __u8 addr_v6[16];
+  };
+  __u16 port;
+  struct{
+    __u8 init : 1;
+    __u8 acked : 1;
+    __u8 state : 1;
+    __u8 undo_cwnd : 1;
+    __u8 cwnd_event : 1;
+    __u8 ssthresh : 1;
+    __u8 cong_avoid : 1;
+    __u8 allsyms : 1;
+    __u8 unused : 8;
+  };
+}__attribute__((packed));
 
 struct event {
   unsigned long long duration_ns;

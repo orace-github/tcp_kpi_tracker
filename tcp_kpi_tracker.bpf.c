@@ -46,18 +46,95 @@ static __always_inline void bictcp_to_event(struct bictcp* ca, struct event* e){
 	BPF_CORE_READ_INTO(&e->bictcp.curr_rtt, ca , curr_rtt);
 }
 
+
+static int fast_compare(const __u8 *ptr0, const __u8 *ptr1, __u16 len){
+  int fast = len/sizeof(size_t) + 1;
+  int offset = (fast-1)*sizeof(size_t);
+  int current_block = 0;
+
+  if(len <= sizeof(size_t)){fast = 0;}
+
+
+  size_t *lptr0 = (size_t*)ptr0;
+  size_t *lptr1 = (size_t*)ptr1;
+
+  while(current_block < fast){
+    if((lptr0[current_block] ^ lptr1[current_block])){
+      int pos;
+      for(pos = current_block*sizeof(size_t); pos < len ; ++pos){
+        if((ptr0[pos] ^ ptr1[pos]) || (ptr0[pos] == 0) || (ptr1[pos] == 0)){
+          return  (int)((unsigned char)ptr0[pos] - (unsigned char)ptr1[pos]);
+          }
+        }
+      }
+    ++current_block;
+    }
+  while(len > offset){
+    if((ptr0[offset] ^ ptr1[offset])){ 
+      return (int)((unsigned char)ptr0[offset] - (unsigned char)ptr1[offset]); 
+      }
+    ++offset;
+    }	
+  return 0;
+  }
+
 struct {
 	__uint(type, BPF_MAP_TYPE_RINGBUF);
 	__uint(max_entries, 256 * 1024);
 } rb SEC(".maps");
 
-const volatile unsigned long long min_duration_ns = 0;
+// struct to filter tcp session in kernel
+struct session filter;
 
+static __always_inline __s32 __v4_filter_pass(const struct sock* sk){
+    __u32 saddr_v4, daddr_v4;
+    __u16 sport, dport;
+    BPF_CORE_READ_INTO(&saddr_v4, sk, __sk_common.skc_rcv_saddr);
+    BPF_CORE_READ_INTO(&daddr_v4, sk, __sk_common.skc_daddr);
+    BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+    BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+
+    if(((filter.addr_v4 == daddr_v4) && (filter.port == dport)) ||
+     ((filter.addr_v4 == saddr_v4) && (filter.port == sport)))
+      return 1;
+    
+    return 0;
+}
+
+static __always_inline __s32 __v6_filter_pass(const struct sock* sk){
+    __u8 saddr_v6[16]; __u8 daddr_v6[16];
+    __u16 sport, dport;
+    BPF_CORE_READ_INTO(&saddr_v6, sk, __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&daddr_v6, sk,__sk_common.skc_v6_daddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+    BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+
+      if(((fast_compare(filter.addr_v6,daddr_v6,16)) && (filter.port == dport)) || 
+      ((fast_compare(filter.addr_v6,saddr_v6,16)) && (filter.port == sport)))
+        return 1;
+      
+    return 0;
+}
+
+static __always_inline __s32 __v4_v6__filter_pass(const struct sock* sk){
+  __u16 af;
+  BPF_CORE_READ_INTO(&af, sk, __sk_common.skc_family);
+  if(af == AF_INET)
+    return __v4_filter_pass(sk);
+  if(af == AF_INET6)
+    return __v6_filter_pass(sk);
+  return 0;
+}
+
+const volatile unsigned long long min_duration_ns = 0;
 
 SEC("tp_btf/tcp_retransmit_skb")
 //SEC("kprobe/tcp_retransmit_skb")
 int BPF_PROG(tcp_retransmit_skb, const struct sock *sk, 
   const struct sk_buff *sk_buff){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -83,9 +160,106 @@ int BPF_PROG(tcp_retransmit_skb, const struct sock *sk,
   bpf_ringbuf_submit(e, 0);
   return 0;		    
 }
+/*
+SEC("kretprobe/bictcp_init")
+void BPF_KPROBE(bictcp_init, struct sock* sk){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return;
+  // tracing bictcp_init ???
+  if(!filter.init || !filter.allsyms)
+    return;
+  struct bictcp* ca = inet_csk_ca(sk);
+  struct event* e;
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  if(!e)
+    return;
+  e->type = BICTCP_INIT;
+  bictcp_to_event(ca,e);
+  bpf_ringbuf_submit(e,0);
+}
 
+SEC("kretprobe/bictcp_cwnd_event")
+void BPF_KPROBE(bictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return;
+  // tracing bictcp_cwnd_event ???
+  if(!filter.cwnd_event || !filter.allsyms)
+    return;
+  struct bictcp* ca = inet_csk_ca(sk);
+  struct event* e;
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  if(!e)
+    return;
+  e->type = BICTCP_CWND_EVENT;
+  bictcp_to_event(ca,e);
+  bpf_ringbuf_submit(e,0);
+}
+
+SEC("kretprobe/bictcp_recalc_ssthresh")
+__s32 BPF_KPROBE(bictcp_recalc_ssthresh, struct sock* sk){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
+  // tracing bictcp_recalc_ssthresh ???
+  if(!filter.ssthresh || !filter.allsyms)
+    return -1;
+  struct bictcp* ca = inet_csk_ca(sk);
+  struct event* e;
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  if(!e)
+    return -1;
+  e->type = BICTCP_SSTHRESH;
+  bictcp_to_event(ca,e);
+  bpf_ringbuf_submit(e,0);
+  return 0;
+}
+
+SEC("kretprobe/bictcp_state")
+void BPF_KPROBE(bictcp_state, struct sock* sk, __u8 new_state){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return;
+  // tracing bictcp_state ???
+  if(!filter.state || !filter.allsyms)
+    return;
+  struct bictcp* ca = inet_csk_ca(sk);
+  struct event* e;
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  if(!e)
+    return;
+  e->type = BICTCP_STATE;
+  bictcp_to_event(ca,e);
+  bpf_ringbuf_submit(e,0);
+}
+
+SEC("kretprobe/bictcp_acked")
+void BPF_KPROBE(bictcp_acked, struct sock* sk, const struct ack_sample* sample){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return;
+  // tracing bictcp_acked ???
+  if(!filter.acked || !filter.allsyms)
+    return;
+  struct bictcp* ca = inet_csk_ca(sk);
+  struct event* e;
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  if(!e)
+    return;
+  e->type = BICTCP_ACKED;
+  bictcp_to_event(ca,e);
+  bpf_ringbuf_submit(e,0);
+}
+*/
 SEC("kretprobe/bictcp_cong_avoid")
 int BPF_KPROBE(bictcp_cong_avoid, struct sock *sk){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
+  // tracing bictcp_cong_avoid ???
+  if(!filter.cong_avoid || !filter.allsyms)
+    return -1;
   struct event *e;
   struct tcp_sock *tp = (struct tcp_sock *)(sk);
   struct bictcp* ca = inet_csk_ca(sk);
@@ -115,6 +289,9 @@ int BPF_KPROBE(bictcp_cong_avoid, struct sock *sk){
 
 SEC("kprobe/__tcp_transmit_skb")
 int BPF_KPROBE(__tcp_transmit_skb, struct sock *sk){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -140,6 +317,9 @@ int BPF_KPROBE(__tcp_transmit_skb, struct sock *sk){
 SEC("tp_btf/tcp_receive_reset")
 int BPF_PROG(tcp_receive_reset, const struct sock *sk, 
   const struct sk_buff *sk_buff){
+    // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -166,6 +346,9 @@ int BPF_PROG(tcp_receive_reset, const struct sock *sk,
 SEC("tp_btf/tcp_send_reset")
 int BPF_PROG(tcp_send_reset, const struct sock *sk, 
   const struct sk_buff *sk_buff){
+    // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -190,6 +373,9 @@ int BPF_PROG(tcp_send_reset, const struct sock *sk,
 
 SEC("tp_btf/tcp_destroy_sock")
 int BPF_PROG(tcp_destroy_sock, const struct sock *sk){
+  // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -213,8 +399,11 @@ int BPF_PROG(tcp_destroy_sock, const struct sock *sk){
 }
 
 SEC("tp_btf/tcp_retransmit_synack")
-int BPF_PROG(tcp_retransmit_synack, const struct sock *sk, 
+int BPF_PROG(tcp_retransmit_synack, const struct sock *sk,  
   const struct request_sock *reqsock){
+    // filter tcp session
+  if(!__v4_v6__filter_pass(sk))
+    return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
