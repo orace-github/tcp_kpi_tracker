@@ -169,7 +169,7 @@ void BPF_KPROBE(cubictcp_init, struct sock* sk){
   // tracing bictcp_init ???
   if(!filter.init || !filter.allsyms)
     return;
-  struct bictcp* ca = inet_csk_ca(sk);
+  //struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
   /*e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
@@ -254,7 +254,6 @@ int BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample)
   bpf_ringbuf_submit(e,0);*/
   return 0;
 }
-
 SEC("kretprobe/cubictcp_cong_avoid")
 int BPF_KPROBE(cubictcp_cong_avoid, struct sock *sk){
   // filter tcp session
