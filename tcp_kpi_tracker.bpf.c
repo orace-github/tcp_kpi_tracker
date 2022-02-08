@@ -169,14 +169,14 @@ void BPF_KPROBE(cubictcp_init, struct sock* sk){
   // tracing bictcp_init ???
   if(!filter.init || !filter.allsyms)
     return;
-  //struct bictcp* ca = inet_csk_ca(sk);
+  struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
-  /*e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return;
   e->type = BICTCP_INIT;
   bictcp_to_event(ca,e);
-  bpf_ringbuf_submit(e,0);*/
+  bpf_ringbuf_submit(e,0);
 }
 
 
