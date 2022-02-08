@@ -245,8 +245,8 @@ int BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample)
     return -1;
     
   struct event *e;
-  /*e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
-  if(!e)
+  e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+  /*if(!e)
     return -1;
   struct bictcp* ca = inet_csk_ca(sk);
   e->type = BICTCP_ACKED;
