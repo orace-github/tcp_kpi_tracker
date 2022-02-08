@@ -160,27 +160,27 @@ int BPF_PROG(tcp_retransmit_skb, const struct sock *sk,
   bpf_ringbuf_submit(e, 0);
   return 0;		    
 }
-/*
-SEC("kretprobe/bictcp_init")
-void BPF_KPROBE(bictcp_init, struct sock* sk){
+
+SEC("kretprobe/cubictcp_init")
+void BPF_KPROBE(cubictcp_init, struct sock *sk){
   // filter tcp session
-  if(!__v4_v6__filter_pass(sk))
+  //if(!__v4_v6__filter_pass(sk))
     return;
   // tracing bictcp_init ???
   if(!filter.init || !filter.allsyms)
     return;
-  struct bictcp* ca = inet_csk_ca(sk);
+  //struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return;
   e->type = BICTCP_INIT;
-  bictcp_to_event(ca,e);
+  //bictcp_to_event(ca,e);
   bpf_ringbuf_submit(e,0);
 }
-
-SEC("kretprobe/bictcp_cwnd_event")
-void BPF_KPROBE(bictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
+/*
+SEC("kretprobe/cubictcp_cwnd_event")
+void BPF_KPROBE(cubictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return;
@@ -197,8 +197,8 @@ void BPF_KPROBE(bictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
   bpf_ringbuf_submit(e,0);
 }
 
-SEC("kretprobe/bictcp_recalc_ssthresh")
-__s32 BPF_KPROBE(bictcp_recalc_ssthresh, struct sock* sk){
+SEC("kretprobe/cubictcp_recalc_ssthresh")
+__s32 BPF_KPROBE(cubictcp_recalc_ssthresh, struct sock* sk){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
@@ -216,8 +216,8 @@ __s32 BPF_KPROBE(bictcp_recalc_ssthresh, struct sock* sk){
   return 0;
 }
 
-SEC("kretprobe/bictcp_state")
-void BPF_KPROBE(bictcp_state, struct sock* sk, __u8 new_state){
+SEC("kretprobe/cubictcp_state")
+void BPF_KPROBE(cubictcp_state, struct sock* sk, __u8 new_state){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return;
@@ -234,8 +234,8 @@ void BPF_KPROBE(bictcp_state, struct sock* sk, __u8 new_state){
   bpf_ringbuf_submit(e,0);
 }
 
-SEC("kretprobe/bictcp_acked")
-void BPF_KPROBE(bictcp_acked, struct sock* sk, const struct ack_sample* sample){
+SEC("kretprobe/cubictcp_acked")
+void BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return;
@@ -252,8 +252,8 @@ void BPF_KPROBE(bictcp_acked, struct sock* sk, const struct ack_sample* sample){
   bpf_ringbuf_submit(e,0);
 }
 */
-SEC("kretprobe/bictcp_cong_avoid")
-int BPF_KPROBE(bictcp_cong_avoid, struct sock *sk){
+SEC("kretprobe/cubictcp_cong_avoid")
+int BPF_KPROBE(cubictcp_cong_avoid, struct sock *sk){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;

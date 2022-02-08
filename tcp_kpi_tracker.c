@@ -459,6 +459,7 @@ cleanup:
   /* Clean up */
   ring_buffer__free(rb);
   tcp_kpi_tracker_bpf__destroy(skel);
-  fclose(env.log_file);
+  if(env.log_file)
+    fclose(env.log_file);
   return err < 0 ? -err : 0;
 }
