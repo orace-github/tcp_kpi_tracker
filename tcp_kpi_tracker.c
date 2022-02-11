@@ -27,7 +27,6 @@ static struct env
   bool bictcp_state;
   bool bictcp_acked;
   bool bictcp_cong_avoid;
-  bool bictcp_cong_algorithms;
   short port;
   short af;
   FILE* log_file;
@@ -89,7 +88,24 @@ static void parse_filter_args()
   // skel->bss->filter.undo_cwnd = TODO
   skel->bss->filter.cwnd_event = (env.bictcp_cwnd_event == true ? 1 : 0);
   skel->bss->filter.cong_avoid = (env.bictcp_cong_avoid == true ? 1 : 0);
-  skel->bss->filter.allsyms = (env.bictcp_cong_algorithms == true ? 1 : 0);
+  if(skel->bss->filter.init){
+    printf("tracking cubictcp_init...\n");
+  }
+  if(skel->bss->filter.acked){
+    printf("tracking cubictcp_acked...\n");
+  }
+  if(skel->bss->filter.state){
+    printf("tracking cubictcp_state...\n");
+  }
+  if(skel->bss->filter.ssthresh){
+    printf("tracking cubictcp_recalc_ssthresh...\n");
+  }
+  if(skel->bss->filter.cwnd_event){
+    printf("tracking cubictcp_cwnd_event...\n");
+  }
+  if(skel->bss->filter.cong_avoid){
+    printf("tracking cubictcp_cong_avoid...\n");
+  }
 }
 
 static error_t parse_arg(int key, char *arg, struct argp_state *state)
@@ -127,7 +143,12 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
     env.bictcp_cong_avoid = true;
     break;
   case 'n':
-    env.bictcp_cong_algorithms = true;
+    env.bictcp_init = true;
+    env.bictcp_cwnd_event = true;
+    env.bictcp_recalc_ssthresh = true;
+    env.bictcp_state = true;
+    env.bictcp_acked = true;
+    env.bictcp_cong_avoid = true;
     break;
   case 'p':
     env.af = strtol(arg, NULL, 10);

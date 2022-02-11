@@ -134,9 +134,11 @@ int BPF_KPROBE(cubictcp_init, struct sock* sk){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
+  bpf_printk("cubictcp_init __v4_v6 filter succeed");
   // tracing bictcp_init ???
-  if(!filter.init || !filter.allsyms)
+  if(!filter.init)
     return -1;
+  bpf_printk("cubictcp_init tracing enabled");
   struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -153,9 +155,11 @@ int BPF_KPROBE(cubictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
+  bpf_printk("cubictcp_cwnd_event __v4_v6 filter succeed");
   // tracing bictcp_cwnd_event ???
-  if(!filter.cwnd_event || !filter.allsyms)
+  if(!filter.cwnd_event)
     return -1;
+  bpf_printk("cubictcp_cwnd_event tracing enabled");
   struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -172,9 +176,11 @@ int BPF_KPROBE(cubictcp_recalc_ssthresh, struct sock* sk){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
+  bpf_printk("cubictcp_recalc_ssthresh __v4_v6 filter succeed");
   // tracing bictcp_recalc_ssthresh ???
-  if(!filter.ssthresh || !filter.allsyms)
+  if(!filter.ssthresh)
     return -1;
+  bpf_printk("cubictcp_recalc_ssthresh tracing enabled");
   struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -191,9 +197,11 @@ int BPF_KPROBE(cubictcp_state, struct sock* sk, __u8 new_state){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
+  bpf_printk("cubictcp_state __v4_v6 filter succeed");
   // tracing bictcp_state ???
-  if(!filter.state || !filter.allsyms)
+  if(!filter.state)
     return -1;
+  bpf_printk("cubictcp_state tracing enabled");
   struct bictcp* ca = inet_csk_ca(sk);
   struct event* e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -210,9 +218,11 @@ int BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample)
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
+  bpf_printk("cubictcp_acked __v4_v6 filter succeed");
   // tracing bictcp_acked ???
-  if(!filter.acked || !filter.allsyms)
+  if(!filter.acked)
     return -1;
+  bpf_printk("cubictcp_acked tracing enabled");
   struct event *e;
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
@@ -229,9 +239,11 @@ int BPF_KPROBE(cubictcp_cong_avoid, struct sock *sk){
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
+  bpf_printk("cubictcp_cong_avoid __v4_v6 filter succeed");
   // tracing bictcp_cong_avoid ???
-  if(!filter.cong_avoid || !filter.allsyms)
+  if(!filter.cong_avoid)
     return -1;
+  bpf_printk("cubictcp_cong_avoid tracing enabled");
   struct event *e;
   struct tcp_sock *tp = (struct tcp_sock *)(sk);
   struct bictcp* ca = inet_csk_ca(sk);

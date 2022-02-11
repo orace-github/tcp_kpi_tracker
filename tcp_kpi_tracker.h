@@ -34,8 +34,7 @@ struct session{
     __u8 cwnd_event : 1;
     __u8 ssthresh : 1;
     __u8 cong_avoid : 1;
-    __u8 allsyms : 1;
-    __u8 unused : 8;
+    __u16 unused : 9;
   };
 }__attribute__((packed));
 
