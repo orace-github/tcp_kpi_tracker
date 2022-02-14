@@ -27,8 +27,8 @@ static struct env
   bool bictcp_state;
   bool bictcp_acked;
   bool bictcp_cong_avoid;
-  short port;
-  short af;
+  unsigned short port;
+  unsigned short af;
   FILE* log_file;
   union
   {
@@ -68,6 +68,30 @@ static const struct argp_option opts[] = {
     {},
 };
 
+/** event to string() **/
+static void event_to_string(const struct event *e){
+  char src[INET6_ADDRSTRLEN];
+  char dst[INET6_ADDRSTRLEN];
+  char eventstr[64];
+  int ret;
+  union {
+    struct in_addr  x4;
+    struct in6_addr x6;
+  } s, d;
+  if (e->af == AF_INET) {
+    s.x4.s_addr = e->saddr_v4;
+    d.x4.s_addr = e->daddr_v4;
+  } else {
+    memcpy(&s.x6.s6_addr, e->saddr_v6, sizeof(s.x6.s6_addr));
+    memcpy(&d.x6.s6_addr, e->daddr_v6, sizeof(d.x6.s6_addr));
+  } 
+  ret = sprintf(eventstr,"%d  %s %s %d %d %d %d", 
+    e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &d, dst, sizeof(dst)), 
+       inet_ntop(e->af, &s, src, sizeof(src)), e->dport,  
+       e->sport, e->portpair >> 16, e->portpair & 0x0000ffff);
+  eventstr[ret] = '\0';
+  printf("%s\n", eventstr);
+}
 /** Tips: Make sure to call this function after open skel bpf structure,
  *  otherwise a SIGSEGV signal is triggered.
  * That's because FILTER_XXX macro doesn't make memmory verification
@@ -228,7 +252,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
   switch (e->type)
   {  
     case BICTCP_CONG_AVOID:
-    fprintf(stderr, "BICTCP_CONG_AVOID\n");
+    fprintf(stderr, "BICTCP_CONG_AVOID ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){
@@ -236,7 +261,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
     }
     break;
     case BICTCP_ACKED:
-    fprintf(stderr, "BICTCP_ACKED\n");
+    fprintf(stderr, "BICTCP_ACKED ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){
@@ -244,7 +270,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
     }
     break;
     case BICTCP_CWND_EVENT:
-    fprintf(stderr, "BICTCP_CWND_EVENT\n");
+    fprintf(stderr, "BICTCP_CWND_EVENT ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){
@@ -252,7 +279,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
     }
     break;
     case BICTCP_INIT:
-    fprintf(stderr, "BICTCP_INIT\n");
+    fprintf(stderr, "BICTCP_INIT ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){
@@ -260,7 +288,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
     }
     break;
     case BICTCP_SSTHRESH:
-    fprintf(stderr, "BICTCP_SSTHRESH\n");
+    fprintf(stderr, "BICTCP_SSTHRESH ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){
@@ -268,7 +297,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
     }
     break;
     case BICTCP_STATE:
-    fprintf(stderr, "BICTCP_STATE\n");
+    fprintf(stderr, "BICTCP_STATE ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){
@@ -276,7 +306,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
     }
     break;
     case BICTCP_UNDO_CWND:
-    fprintf(stderr, "BICTCP_UNDO_CWND\n");
+    fprintf(stderr, "BICTCP_UNDO_CWND ");
+    event_to_string(e);
     fprintf(stdout,"%s:%d %s:%d %s:%d\n",
     "tcp_cwnd",e->bictcp.tcp_cwnd,"last_cwnd",e->bictcp.last_cwnd,"last_max_cwnd",e->bictcp.last_max_cwnd);
     if(env.log_file){

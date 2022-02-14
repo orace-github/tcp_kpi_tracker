@@ -144,8 +144,21 @@ int BPF_KPROBE(cubictcp_init, struct sock* sk){
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return -1;
+  BPF_CORE_READ_INTO(&e->af, sk, __sk_common.skc_family);
+  if(e->af == AF_INET){
+    BPF_CORE_READ_INTO(&e->saddr_v4, sk, __sk_common.skc_rcv_saddr);
+    BPF_CORE_READ_INTO(&e->daddr_v4, sk, __sk_common.skc_daddr);
+  }else if(e->af == AF_INET6){
+    BPF_CORE_READ_INTO(&e->saddr_v6, sk,
+			   __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&e->daddr_v6, sk,
+			   __sk_common.skc_v6_daddr.in6_u.u6_addr32);
+  }
+  BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   e->type = BICTCP_INIT;
   bictcp_to_event(ca,e);
+  bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
   bpf_ringbuf_submit(e,0);
   return 0;
 }
@@ -165,8 +178,21 @@ int BPF_KPROBE(cubictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return -1;
+  BPF_CORE_READ_INTO(&e->af, sk, __sk_common.skc_family);
+  if(e->af == AF_INET){
+    BPF_CORE_READ_INTO(&e->saddr_v4, sk, __sk_common.skc_rcv_saddr);
+    BPF_CORE_READ_INTO(&e->daddr_v4, sk, __sk_common.skc_daddr);
+  }else if(e->af == AF_INET6){
+    BPF_CORE_READ_INTO(&e->saddr_v6, sk,
+			   __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&e->daddr_v6, sk,
+			   __sk_common.skc_v6_daddr.in6_u.u6_addr32);
+  }
+  BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   e->type = BICTCP_CWND_EVENT;
   bictcp_to_event(ca,e);
+  bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
   bpf_ringbuf_submit(e,0);
   return 0;
 }
@@ -186,8 +212,21 @@ int BPF_KPROBE(cubictcp_recalc_ssthresh, struct sock* sk){
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return -1;
+  BPF_CORE_READ_INTO(&e->af, sk, __sk_common.skc_family);
+  if(e->af == AF_INET){
+    BPF_CORE_READ_INTO(&e->saddr_v4, sk, __sk_common.skc_rcv_saddr);
+    BPF_CORE_READ_INTO(&e->daddr_v4, sk, __sk_common.skc_daddr);
+  }else if(e->af == AF_INET6){
+    BPF_CORE_READ_INTO(&e->saddr_v6, sk,
+			   __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&e->daddr_v6, sk,
+			   __sk_common.skc_v6_daddr.in6_u.u6_addr32);
+  }
+  BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   e->type = BICTCP_SSTHRESH;
   bictcp_to_event(ca,e);
+  bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
   bpf_ringbuf_submit(e,0);
   return 0;
 }
@@ -207,8 +246,21 @@ int BPF_KPROBE(cubictcp_state, struct sock* sk, __u8 new_state){
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return -1;
+  BPF_CORE_READ_INTO(&e->af, sk, __sk_common.skc_family);
+  if(e->af == AF_INET){
+    BPF_CORE_READ_INTO(&e->saddr_v4, sk, __sk_common.skc_rcv_saddr);
+    BPF_CORE_READ_INTO(&e->daddr_v4, sk, __sk_common.skc_daddr);
+  }else if(e->af == AF_INET6){
+    BPF_CORE_READ_INTO(&e->saddr_v6, sk,
+			   __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&e->daddr_v6, sk,
+			   __sk_common.skc_v6_daddr.in6_u.u6_addr32);
+  }
+  BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   e->type = BICTCP_STATE;
   bictcp_to_event(ca,e);
+  bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
   bpf_ringbuf_submit(e,0);
   return 0;
 }
@@ -227,9 +279,22 @@ int BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample)
   e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
   if(!e)
     return -1;
+  BPF_CORE_READ_INTO(&e->af, sk, __sk_common.skc_family);
+  if(e->af == AF_INET){
+    BPF_CORE_READ_INTO(&e->saddr_v4, sk, __sk_common.skc_rcv_saddr);
+    BPF_CORE_READ_INTO(&e->daddr_v4, sk, __sk_common.skc_daddr);
+  }else if(e->af == AF_INET6){
+    BPF_CORE_READ_INTO(&e->saddr_v6, sk,
+			   __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+    BPF_CORE_READ_INTO(&e->daddr_v6, sk,
+			   __sk_common.skc_v6_daddr.in6_u.u6_addr32);
+  }
+  BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   struct bictcp* ca = inet_csk_ca(sk);
   e->type = BICTCP_ACKED;
   bictcp_to_event(ca,e);
+  bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
   bpf_ringbuf_submit(e,0);
   return 0;
 }
@@ -261,11 +326,13 @@ int BPF_KPROBE(cubictcp_cong_avoid, struct sock *sk){
 			   __sk_common.skc_v6_daddr.in6_u.u6_addr32);
   }
   BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
   BPF_CORE_READ_INTO(&e->snd_wnd, tp, snd_wnd);
   BPF_CORE_READ_INTO(&e->snd_ssthresh, tp, snd_ssthresh);
   BPF_CORE_READ_INTO(&e->rcv_ssthresh, tp, rcv_ssthresh);
   e->type = BICTCP_CONG_AVOID;
   bictcp_to_event(ca,e);
+  bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
   /* send data to user-space for post-processing */
   bpf_ringbuf_submit(e, 0);
   return 0;		    
