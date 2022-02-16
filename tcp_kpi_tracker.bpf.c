@@ -8,6 +8,7 @@ char LICENSE[] SEC("license") = "GPL";
 
 #define AF_INET    2
 #define AF_INET6   10
+#define bpf_ntohs(x) __builtin_bswap16(x)
 
 static __always_inline struct tcp_sock *tcp_sk(const struct sock *sk)
 {
@@ -120,8 +121,7 @@ static __always_inline __s32 __v6_filter_pass(const struct sock* sk){
 static __always_inline __s32 __v4_v6__filter_pass(const struct sock* sk){
   __u16 af;
   BPF_CORE_READ_INTO(&af, sk, __sk_common.skc_family);
-  af = bpf_ntohs(af);
-  
+  af = bpf_ntohs(af);  
   if(af == AF_INET)
     return __v4_filter_pass(sk);
   if(af == AF_INET6)
