@@ -120,6 +120,8 @@ static __always_inline __s32 __v6_filter_pass(const struct sock* sk){
 static __always_inline __s32 __v4_v6__filter_pass(const struct sock* sk){
   __u16 af;
   BPF_CORE_READ_INTO(&af, sk, __sk_common.skc_family);
+  af = bpf_ntohs(af);
+  
   if(af == AF_INET)
     return __v4_filter_pass(sk);
   if(af == AF_INET6)
@@ -190,6 +192,8 @@ int BPF_KPROBE(cubictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
   }
   BPF_CORE_READ_INTO(&e->dport, sk, __sk_common.skc_dport);
   BPF_CORE_READ_INTO(&e->sport, sk, __sk_common.skc_num);
+  e->dport = bpf_ntohs(e->dport);
+  e->sport = bpf_ntohs(e->sport);
   e->type = BICTCP_CWND_EVENT;
   bictcp_to_event(ca,e);
   bpf_printk("tcp_cwnd:%d last_cwnd:%d last_max_cwnd:%d\n",e->bictcp.tcp_cwnd, e->bictcp.last_cwnd, e->bictcp.last_max_cwnd);
