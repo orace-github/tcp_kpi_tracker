@@ -131,6 +131,11 @@ const volatile unsigned long long min_duration_ns = 0;
 
 SEC("kretprobe/cubictcp_init")
 int BPF_KPROBE(cubictcp_init, struct sock* sk){
+  __u16 dport, sport;
+  BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+  if(dport == filter.port || sport == filter.port)
+    bpf_printk("Port pair %d <--> %d\n",dport,sport);
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
@@ -165,6 +170,11 @@ int BPF_KPROBE(cubictcp_init, struct sock* sk){
 
 SEC("kretprobe/cubictcp_cwnd_event")
 int BPF_KPROBE(cubictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
+    __u16 dport, sport;
+  BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+  if(dport == filter.port || sport == filter.port)
+    bpf_printk("Port pair %d <--> %d\n",dport,sport);
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
@@ -199,6 +209,11 @@ int BPF_KPROBE(cubictcp_cwnd_event, struct sock* sk, enum tcp_ca_event event){
 
 SEC("kretprobe/cubictcp_recalc_ssthresh")
 int BPF_KPROBE(cubictcp_recalc_ssthresh, struct sock* sk){
+    __u16 dport, sport;
+  BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+  if(dport == filter.port || sport == filter.port)
+    bpf_printk("Port pair %d <--> %d\n",dport,sport);
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
@@ -233,6 +248,11 @@ int BPF_KPROBE(cubictcp_recalc_ssthresh, struct sock* sk){
 
 SEC("kretprobe/cubictcp_state")
 int BPF_KPROBE(cubictcp_state, struct sock* sk, __u8 new_state){
+    __u16 dport, sport;
+  BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+  if(dport == filter.port || sport == filter.port)
+    bpf_printk("Port pair %d <--> %d\n",dport,sport);
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
@@ -267,6 +287,11 @@ int BPF_KPROBE(cubictcp_state, struct sock* sk, __u8 new_state){
 
 SEC("kretprobe/cubictcp_acked")
 int BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample){
+    __u16 dport, sport;
+  BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+  if(dport == filter.port || sport == filter.port)
+    bpf_printk("Port pair %d <--> %d\n",dport,sport);
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
@@ -301,6 +326,11 @@ int BPF_KPROBE(cubictcp_acked, struct sock* sk, const struct ack_sample* sample)
 
 SEC("kretprobe/cubictcp_cong_avoid")
 int BPF_KPROBE(cubictcp_cong_avoid, struct sock *sk){
+    __u16 dport, sport;
+  BPF_CORE_READ_INTO(&dport, sk, __sk_common.skc_dport);
+  BPF_CORE_READ_INTO(&sport, sk, __sk_common.skc_num);
+  if(dport == filter.port || sport == filter.port)
+    bpf_printk("Port pair %d <--> %d\n",dport,sport);
   // filter tcp session
   if(!__v4_v6__filter_pass(sk))
     return -1;
